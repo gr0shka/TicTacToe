@@ -9,8 +9,89 @@ import (
 type gameService struct{}
 
 func (g gameService) NextTurn(cg domain.CurrentGame) (int, int, error) {
-	//TODO implement me
-	panic("implement me")
+	newCg := cg
+	nextCurrentPlayer := domain.FirstPlayer
+	var maxCellPoints = struct {
+		points int
+		x, y   int
+	}{}
+
+	for i := 0; i < domain.BoardSize; i++ {
+		for j := 0; j < domain.BoardSize; j++ {
+
+			if cg.GetCurrentPlayer() == domain.FirstPlayer {
+
+				newCg.Set(i, j, domain.FirstPlayerOccupied)
+				nextCurrentPlayer = domain.SecondPlayer
+
+			} else {
+				newCg.Set(i, j, domain.SecondPlayerOccupied)
+				nextCurrentPlayer = domain.FirstPlayer
+			}
+
+			mx := g.miniMax(newCg, nextCurrentPlayer)
+			if maxCellPoints.points < mx {
+				maxCellPoints.points = mx
+				maxCellPoints.x, maxCellPoints.y = i, j
+			}
+		}
+	}
+
+	return maxCellPoints.x, maxCellPoints.y, nil
+}
+
+const CountOfPointsForWin = 10
+
+func (g gameService) miniMax(cg domain.CurrentGame, currentPlayer domain.Player) int {
+	newCg := cg
+	nextCurrentPlayer := domain.FirstPlayer
+
+	if w, _ := g.IsGameOver(newCg); w != Winner(Draw) {
+		if newCg.GetComputerPlayer() == domain.FirstPlayer && w == Winner(First) ||
+			newCg.GetComputerPlayer() == domain.SecondPlayer && w == Winner(Second) {
+
+			return CountOfPointsForWin
+		}
+
+		return -CountOfPointsForWin
+
+	}
+
+	for i := 0; i < domain.BoardSize; i++ {
+		for j := 0; j < domain.BoardSize; j++ {
+
+			if cell, _ := cg.Get(i, j); cell == domain.FreeCell {
+
+				if currentPlayer == domain.FirstPlayer {
+
+					newCg.Set(i, j, domain.FirstPlayerOccupied)
+					nextCurrentPlayer = domain.SecondPlayer
+
+				} else {
+					newCg.Set(i, j, domain.SecondPlayerOccupied)
+					nextCurrentPlayer = domain.FirstPlayer
+				}
+
+				w, isEnd := g.IsGameOver(newCg)
+				if w != Winner(Draw) {
+					if newCg.GetComputerPlayer() == domain.FirstPlayer && w == Winner(First) ||
+						newCg.GetComputerPlayer() == domain.SecondPlayer && w == Winner(Second) {
+
+						return CountOfPointsForWin
+					}
+
+					return -CountOfPointsForWin
+
+				} else if !isEnd {
+					return g.miniMax(newCg, nextCurrentPlayer)
+				}
+
+				return 0
+			}
+		}
+	}
+
+	return 0
 }
 
 func (g gameService) ValidateNextTurn(oldCg, nextCg domain.CurrentGame) error {
