@@ -13,7 +13,7 @@ type GameBoard struct {
 }
 
 func (gm *GameBoard) Set(i, j, value int) error {
-	if value == 0 || value == 1 {
+	if value != 0 && value != 1 {
 		return errors.New("invalid value")
 	}
 
