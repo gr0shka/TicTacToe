@@ -1,11 +1,11 @@
 package domain
 
-import(
+import (
 	"github.com/google/uuid"
 )
 
 type GameBoard struct {
-	var board [][]int
+	board [][]int
 }
 
 type CurrentGame struct {
