@@ -1,10 +1,6 @@
 package domain
 
-import (
-	"errors"
-
-	"github.com/google/uuid"
-)
+import "errors"
 
 const BoardSize = 3
 
@@ -32,17 +28,4 @@ func (gm *GameBoard) Get(i, j int) (value int, err error) {
 	}
 
 	return gm.board[i][j], nil
-}
-
-type CurrentGame struct {
-	GameBoard
-	id uuid.UUID
-}
-
-func (cg CurrentGame) GetID() uuid.UUID {
-	return cg.id
-}
-
-func (cg *CurrentGame) SetID(id uuid.UUID) {
-	cg.id = id
 }
