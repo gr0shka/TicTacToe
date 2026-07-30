@@ -47,9 +47,9 @@ func (g gameService) ValidateNextTurn(oldCg, nextCg domain.CurrentGame) error {
 
 		if countFirstPlayerCells > countSecondPlayerCells {
 			return errors.New("it should be the second player's turn now")
-		} else {
-			return errors.New("it should be the first player's turn now")
 		}
+
+		return errors.New("it should be the first player's turn now")
 	}
 
 	return nil
