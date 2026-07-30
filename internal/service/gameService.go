@@ -7,13 +7,13 @@ import (
 type Winner int
 
 const (
-	Draw Winner = iota
-	First
+	First Winner = iota
 	Second
+	Draw
 )
 
 type GameService interface {
-	NextTurn(cg domain.CurrentGame) (i, j int, err error)
-	ValidateGameBoard(gb1, gb2 domain.CurrentGame) (err error)
-	IsGameOver(cg domain.CurrentGame) (w Winner, isEnd bool)
+	NextTurn(cg domain.CurrentGame) (int, int, error)
+	ValidateNextTurn(cg1, cg2 domain.CurrentGame) error
+	IsGameOver(cg domain.CurrentGame) (Winner, bool)
 }
