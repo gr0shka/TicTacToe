@@ -1,7 +1,9 @@
 package service
 
+import "TicTacToe/internal/domain"
+
 type GameService interface {
-	NextTurn() GameService
+	NextTurn() domain.GameBoard
 	ValidationGameBoard() bool
 	IsGameOver() bool
 }
