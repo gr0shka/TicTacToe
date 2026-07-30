@@ -14,6 +14,6 @@ const (
 
 type GameService interface {
 	NextTurn(cg domain.CurrentGame) (int, int, error)
-	ValidateNextTurn(cg1, cg2 domain.CurrentGame) error
+	ValidateNextTurn(oldCg, nextCg domain.CurrentGame) error
 	IsGameOver(cg domain.CurrentGame) (Winner, bool)
 }
