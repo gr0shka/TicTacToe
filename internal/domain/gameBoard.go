@@ -4,6 +4,12 @@ import "errors"
 
 const BoardSize = 3
 
+const (
+	FreeCell int = iota
+	FirstPlayerOccupied
+	SecondPlayerOccupied
+)
+
 type GameBoard struct {
 	board [BoardSize][BoardSize]int
 }
