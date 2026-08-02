@@ -9,7 +9,6 @@ import (
 type gameService struct{}
 
 func (g gameService) NextTurn(cg domain.CurrentGame) (int, int, error) {
-	newCg := cg
 	nextCurrentPlayer := domain.FirstPlayer
 	var maxCellPoints = struct {
 		points int
@@ -19,6 +18,11 @@ func (g gameService) NextTurn(cg domain.CurrentGame) (int, int, error) {
 	for i := 0; i < domain.BoardSize; i++ {
 		for j := 0; j < domain.BoardSize; j++ {
 
+			if val, _ := cg.Get(i, j); val != domain.FreeCell {
+				continue
+			}
+
+			newCg := cg
 			if cg.GetCurrentPlayer() == domain.FirstPlayer {
 
 				newCg.Set(i, j, domain.FirstPlayerOccupied)
@@ -98,6 +102,7 @@ func (g gameService) ValidateNextTurn(oldCg, nextCg domain.CurrentGame) error {
 	countChangedCells := 0
 	countFirstPlayerCells := 0
 	countSecondPlayerCells := 0
+	replaceNonFreeCells := 0
 
 	for i := 0; i < domain.BoardSize; i++ {
 		for j := 0; j < domain.BoardSize; j++ {
@@ -107,11 +112,15 @@ func (g gameService) ValidateNextTurn(oldCg, nextCg domain.CurrentGame) error {
 
 			if oldCell != newCell {
 				countChangedCells++
+
+				if oldCell != domain.FreeCell {
+					replaceNonFreeCells++
+				}
 			}
 
 			if newCell == domain.FirstPlayerOccupied {
 				countFirstPlayerCells++
-			} else {
+			} else if newCell == domain.SecondPlayerOccupied {
 				countSecondPlayerCells++
 			}
 		}
@@ -122,6 +131,10 @@ func (g gameService) ValidateNextTurn(oldCg, nextCg domain.CurrentGame) error {
 	}
 	if countChangedCells < 1 {
 		return errors.New("no changes in board")
+	}
+
+	if replaceNonFreeCells > 0 {
+		return errors.New("modified non free cells")
 	}
 
 	if math.Abs(float64(countFirstPlayerCells)-float64(countSecondPlayerCells)) > 1 {
@@ -168,6 +181,10 @@ func checkHorizontalLines(cg domain.CurrentGame) Winner {
 		firstCell, _ := cg.Get(i, 0)
 		w = Winner(firstCell)
 
+		if firstCell == domain.FreeCell {
+			continue
+		}
+
 		for j := 0; j < domain.BoardSize; j++ {
 			if cell, _ := cg.Get(i, j); cell != firstCell {
 				w = Winner(Draw)
@@ -186,6 +203,10 @@ func checkVerticalLines(cg domain.CurrentGame) Winner {
 		firstCell, _ := cg.Get(0, j)
 		w = Winner(firstCell)
 
+		if firstCell == domain.FreeCell {
+			continue
+		}
+
 		for i := 0; i < domain.BoardSize; i++ {
 			if cell, _ := cg.Get(i, j); cell != firstCell {
 				w = Winner(Draw)
@@ -201,24 +222,30 @@ func checkDiagonalLines(cg domain.CurrentGame) Winner {
 	firstCell, _ := cg.Get(0, 0)
 	w := Winner(firstCell)
 
-	for i := 0; i < domain.BoardSize; i++ {
-		if cell, _ := cg.Get(i, i); cell != firstCell {
-			w = Winner(Draw)
-			break
-		}
-	}
+	if firstCell != domain.FreeCell {
 
-	if w != Winner(Draw) {
-		return w
+		for i := 0; i < domain.BoardSize; i++ {
+			if cell, _ := cg.Get(i, i); cell != firstCell {
+				w = Winner(Draw)
+				break
+			}
+		}
+
+		if w != Winner(Draw) {
+			return w
+		}
 	}
 
 	firstCell, _ = cg.Get(domain.BoardSize-1, domain.BoardSize-1)
 	w = Winner(firstCell)
 
-	for i := domain.BoardSize - 1; i >= 0; i-- {
-		if cell, _ := cg.Get(i, i); cell != firstCell {
-			w = Winner(Draw)
-			break
+	if firstCell != domain.FreeCell {
+
+		for i := 0; i < domain.BoardSize; i++ {
+			if cell, _ := cg.Get(i, domain.BoardSize-i-1); cell != firstCell {
+				w = Winner(Draw)
+				break
+			}
 		}
 	}
 
