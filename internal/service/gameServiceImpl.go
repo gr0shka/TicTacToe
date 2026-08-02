@@ -13,7 +13,7 @@ func (g gameService) NextTurn(cg domain.CurrentGame) (int, int, error) {
 	var maxCellPoints = struct {
 		points int
 		x, y   int
-	}{}
+	}{math.MinInt, 0, 0}
 
 	for i := 0; i < domain.BoardSize; i++ {
 		for j := 0; j < domain.BoardSize; j++ {
@@ -25,11 +25,17 @@ func (g gameService) NextTurn(cg domain.CurrentGame) (int, int, error) {
 			newCg := cg
 			if cg.GetCurrentPlayer() == domain.FirstPlayer {
 
-				newCg.Set(i, j, domain.FirstPlayerOccupied)
+				if err := newCg.Set(i, j, domain.FirstPlayerOccupied); err != nil {
+					return 0, 0, err
+				}
+
 				nextCurrentPlayer = domain.SecondPlayer
 
 			} else {
-				newCg.Set(i, j, domain.SecondPlayerOccupied)
+				if err := newCg.Set(i, j, domain.SecondPlayerOccupied); err != nil {
+					return 0, 0, err
+				}
+
 				nextCurrentPlayer = domain.FirstPlayer
 			}
 
@@ -47,52 +53,69 @@ func (g gameService) NextTurn(cg domain.CurrentGame) (int, int, error) {
 const CountOfPointsForWin = 10
 
 func (g gameService) miniMax(cg domain.CurrentGame, currentPlayer domain.Player) int {
-	newCg := cg
-	nextCurrentPlayer := domain.FirstPlayer
 
-	if w, _ := g.IsGameOver(newCg); w != Winner(Draw) {
-		if newCg.GetComputerPlayer() == domain.FirstPlayer && w == Winner(First) ||
-			newCg.GetComputerPlayer() == domain.SecondPlayer && w == Winner(Second) {
+	otherPlayer := func(pl domain.Player) domain.Player {
+		if pl == domain.FirstPlayer {
+			return domain.SecondPlayer
+		}
+
+		return domain.FirstPlayer
+	}
+
+	turnPlayer := func(pl domain.Player) int {
+		if pl == domain.FirstPlayer {
+			return domain.FirstPlayerOccupied
+		}
+
+		return domain.SecondPlayerOccupied
+	}
+
+	if w, ok := g.IsGameOver(cg); ok {
+		if w == Winner(Draw) {
+			return 0
+		}
+
+		if w == Winner(First) && cg.GetComputerPlayer() == domain.FirstPlayer ||
+			w == Winner(Second) && cg.GetComputerPlayer() == domain.SecondPlayer {
 
 			return CountOfPointsForWin
 		}
 
 		return -CountOfPointsForWin
-
 	}
 
-	for i := 0; i < domain.BoardSize; i++ {
-		for j := 0; j < domain.BoardSize; j++ {
+	if currentPlayer == cg.GetComputerPlayer() {
+		best := math.MinInt
 
-			if cell, _ := cg.Get(i, j); cell == domain.FreeCell {
-
-				if currentPlayer == domain.FirstPlayer {
-
-					newCg.Set(i, j, domain.FirstPlayerOccupied)
-					nextCurrentPlayer = domain.SecondPlayer
-
-				} else {
-					newCg.Set(i, j, domain.SecondPlayerOccupied)
-					nextCurrentPlayer = domain.FirstPlayer
+		for i := 0; i < domain.BoardSize; i++ {
+			for j := 0; j < domain.BoardSize; j++ {
+				if val, _ := cg.Get(i, j); val != domain.FreeCell {
+					continue
 				}
 
-				w, isEnd := g.IsGameOver(newCg)
-				if w != Winner(Draw) {
-					if newCg.GetComputerPlayer() == domain.FirstPlayer && w == Winner(First) ||
-						newCg.GetComputerPlayer() == domain.SecondPlayer && w == Winner(Second) {
-
-						return CountOfPointsForWin
-					}
-
-					return -CountOfPointsForWin
-
-				} else if !isEnd {
-					return g.miniMax(newCg, nextCurrentPlayer)
-				}
-
-				return 0
+				newCg := cg
+				newCg.Set(i, j, turnPlayer(currentPlayer))
+				score := g.miniMax(newCg, otherPlayer(currentPlayer))
+				best = max(best, score)
 			}
 		}
+		return best
+
+	} else {
+		best := math.MaxInt
+		for i := 0; i < domain.BoardSize; i++ {
+			for j := 0; j < domain.BoardSize; j++ {
+				if val, _ := cg.Get(i, j); val != domain.FreeCell {
+					continue
+				}
+
+				newCg := cg
+				newCg.Set(i, j, turnPlayer(currentPlayer))
+				score := g.miniMax(newCg, otherPlayer(currentPlayer))
+				best = min(best, score)
+			}
+		}
+		return best
 	}
 
 	return 0
@@ -236,7 +259,7 @@ func checkDiagonalLines(cg domain.CurrentGame) Winner {
 		}
 	}
 
-	firstCell, _ = cg.Get(domain.BoardSize-1, domain.BoardSize-1)
+	firstCell, _ = cg.Get(0, domain.BoardSize-1)
 	w = Winner(firstCell)
 
 	if firstCell != domain.FreeCell {
